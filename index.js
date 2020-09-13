@@ -2,7 +2,7 @@
 // @name        D&D Beyond fixed sidebar
 // @namespace   dndbeyond-fixed-sidebar
 // @description This script sets the sidebar fixed to the left side, and opens the profile upon launch.
-// @version     1
+// @version     2
 // @grant       none
 // @include     /^(https://www.dndbeyond.com/profile/[^/]*/characters/.*|https://www.dndbeyond.com/characters/.*)$/
 // ==/UserScript==
@@ -17,8 +17,7 @@ const clickElement = (query) => {
 }
 
 const keepTrying = (
-    fn, 
-    {
+    fn, {
         checkEvery = 500,
         stopAfter = 5000,
         delayBy = 0
@@ -28,7 +27,7 @@ const keepTrying = (
         const timeout = setTimeout(() => {
             clearInterval(interval)
 
-            reject(new Error('Timeout after ${stopAfter}ms.'))
+            return reject(new Error('Timeout after ${stopAfter}ms.'))
         }, stopAfter)
 
         const interval = setInterval(() => {
@@ -39,7 +38,7 @@ const keepTrying = (
             clearInterval(interval)
             clearTimeout(timeout)
 
-            resolve(result)
+            return resolve(result)
         }, checkEvery)
     }, delayBy)
 })
@@ -54,39 +53,50 @@ const expandPromise = async (promise) => {
         error = err
     }
 
-    return [error, data]
+    return [ error, data ]
 }
 
+const logError = (error, message) => {
+    if (!error) return
+
+    console.error(message)
+}
+
+const pageClickOptions = { delayBy: 2000 }
+
 const onLoad = async () => {
-    const tryToClickExpand = () => clickElement('.ct-sidebar__control--expand')
-    const [timeoutError, expandElement] = await expandPromise(keepTrying(tryToClickExpand, {
-        delayBy: 2000
-    }))
+    console.log('Optimizing D&D Beyond...')
 
-    if (timeoutError) {
-        console.error('Timed out while waiting on sidebar controls')
+    const clickBannerDismiss = () => clickElement('.ddb-site-banner--dismiss')
+    keepTrying(clickBannerDismiss)
 
-        return
+    const setSidebar = async () => {
+        // await keepTrying(() => clickElement('.ct-sidebar__control--unlock'), pageClickOptions)
+        await keepTrying(() => clickElement('.ct-sidebar__control--expand'))
+
+        clickElement('.ct-sidebar__control--left')
+        clickElement('.ct-sidebar__control--fixed')
+        clickElement('.ct-sidebar__control-group--lock')
     }
 
     console.log("Expanding sidebar")
-
-    expandElement.click()
-    clickElement('.ct-sidebar__control--left')
-    clickElement('.ct-sidebar__control--fixed')
-    clickElement('.ct-sidebar__control--unlock')
-
-    const bannerElement = document.querySelector('.ddb-site-banner')
-    if (bannerElement) bannerElement.style.display = 'none'
+    const willSetSidebar = setSidebar()
 
     const tryToClickProfile = () => clickElement('.ddbc-character-avatar__portrait')
-    const [portraitError, portrait] = await expandPromise(keepTrying(tryToClickProfile))
+    const willKeepClickingProfile = keepTrying(tryToClickProfile, pageClickOptions)
 
-    if (portraitError) {
-        console.error('Timed out while waiting on portrait')
+    const [sidebarTimeout] = await expandPromise(willSetSidebar)
+    const [ profileTimeout ] = await expandPromise(willKeepClickingProfile)
 
-        return
-    }
+    logError(sidebarTimeout, 'Timed out while waiting on sidebar controls')
+    logError(profileTimeout, 'Timed out while waiting on portrait')
 }
 
-window.addEventListener('load', onLoad, false)
+window.addEventListener('load', () => {
+    try {
+        onLoad()
+    }
+    catch (error) {
+        console.error(error)
+    }
+}, false)
