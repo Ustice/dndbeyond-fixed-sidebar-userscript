@@ -85,16 +85,16 @@ const onLoad = async () => {
     const tryToClickProfile = () => clickElement('.ddbc-character-avatar__portrait')
     const willKeepClickingProfile = keepTrying(tryToClickProfile, pageClickOptions)
 
-    const [sidebarTimeout] = await expandPromise(willSetSidebar)
+    const [ sidebarTimeout ] = await expandPromise(willSetSidebar)
     const [ profileTimeout ] = await expandPromise(willKeepClickingProfile)
 
     logError(sidebarTimeout, 'Timed out while waiting on sidebar controls')
     logError(profileTimeout, 'Timed out while waiting on portrait')
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
     try {
-        onLoad()
+        await onLoad()
     }
     catch (error) {
         console.error(error)
