@@ -2,7 +2,7 @@
 // @name        D&D Beyond fixed sidebar
 // @namespace   dndbeyond-fixed-sidebar
 // @description This script sets the sidebar fixed to the left side, and opens the profile upon launch.
-// @version     2
+// @version     3
 // @grant       none
 // @include     /^(https://www.dndbeyond.com/profile/[^/]*/characters/.*|https://www.dndbeyond.com/characters/.*)$/
 // ==/UserScript==
